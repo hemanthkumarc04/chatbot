@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Teacher - Voice Assistant</title>
+</head>
+<body>
+    <h2>Ask AI</h2>
+    
+    <button onclick="startRecognition()">Start Voice Input</button>
+    <p id="voiceText">You can speak now...</p>
+    
+    <h3>Answer:</h3>
+    <p id="answer">{{ answer }}</p>
+
+    <script>
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        alert('Your browser does not support Speech Recognition. Please use Chrome or Edge.');
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+
+    recognition.onresult = function(event) {
+        const transcript = event.results[0][0].transcript;
+        document.getElementById('voiceText').innerText = "You said: " + transcript;
+        
+        console.log('Sending question to backend:', transcript); 
+        getAIResponse(transcript); 
+    };
+
+    recognition.onerror = function(event) {
+        console.error('SpeechRecognition error', event.error);
+        document.getElementById('voiceText').innerText = 'Error: ' + event.error;
+    };
+
+    function startRecognition() {
+        document.getElementById('voiceText').innerText = "Listening...";
+        recognition.start(); 
+    }
+
+    function getAIResponse(question) {
+        // 🛑 UPDATED: Pointing to the correct API endpoint
+        fetch("/api/ask-ai/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ question: question }) 
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log("Response from backend:", data); 
+            
+            // Checking for the 'answer' key that our Django view will send
+            if (data.answer) {
+                document.getElementById('answer').innerText = data.answer;
+                playAnswer(data.answer); 
+            } else if (data.error) {
+                document.getElementById('answer').innerText = "Backend Error: " + data.error;
+            } else {
+                document.getElementById('answer').innerText = "No answer received.";
+            }
+        })
+        .catch(error => {
+            document.getElementById('answer').innerText = "Error: " + error.message;
+            console.error("Error fetching the answer:", error); 
+        });
+    }
+
+    function playAnswer(answer) {
+        const speech = new SpeechSynthesisUtterance(answer);
+        window.speechSynthesis.speak(speech); 
+    }
+    </script>
+</body>
+</html>
