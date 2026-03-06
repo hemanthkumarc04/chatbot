@@ -5,8 +5,8 @@ load_dotenv()
 client = genai.Client()
 
 response = client.models.generate_content(
-    model="gemini-2.5-flash",
-    contents="What is the colour of Indian flag? answer in one word",
+    model="Gemini 3.1 Flash Lite",
+    contents="What is the colour of italy flag? answer in one word",
 )
 
 print(response.text)
